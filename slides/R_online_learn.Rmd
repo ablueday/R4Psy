@@ -1,0 +1,101 @@
+---
+title: "R Notebook for online course of Chuanpeng,Hu"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+# Chap-5
+
+## 练习
+
+```{r}
+# 数据结构,将表格中的内容创建为数据框，并将第一列改为因子
+gender_tmp <- c("男", "女", "女", "男")
+gender <- factor(gender_tmp, levels = c("男", "女"))
+score <- c(97, 99, 95, 96)
+letter <- c("A", "A", "B", "B")
+logic <- c("T", "F", "T", "F")
+data <- data.frame(gender, score, letter, logic)
+data
+```
+
+## 计算环境配置
+
+```{r}
+# 下载、导入所需的 R 包
+if (!requireNamespace('pacman', quietly = TRUE)) {
+    install.packages('pacman')
+}
+
+pacman::p_load(bruceR, tidyverse, here)
+```
+
+# 其他环境搭建
+
+> 用于将 RMarkdown 文件编译成基于 Web 的幻灯片
+
+```{r}
+# 1. 安装 xaringan 和 辅助包
+# xaringan 专门用于生成基于 Web 的幻灯片
+pacman::p_load(xaringan, knitr, knitr, xfun)
+
+# 2. 检查并确保 rmarkdown 也是最新版本
+pacman::p_load(rmarkdown)
+
+# 3. 手动编译 Rmd 文件
+# 在 Console 中运行这行代码
+# rmarkdown::render("path/to/你的文件名.Rmd")
+```
+
+## 读取数据
+
+> 以 penguin 数据为例
+
+```{r}
+# 读取 penguin_rawdata.csv，注意编码
+penguin_data <- bruceR::import(here::here('slides', 'data', 'penguin', 'penguin_rawdata.csv'), encoding = 'Latin-1')
+
+# 使用基础包读取数据，同样注意编码
+# penguin_data <- read.csv('.slides/data/penguin/penguin_rawdata_new.csv', fileEncoding = 'GBK')
+
+
+```
+
+## 查看数据
+
+```{r}
+# 查看数据
+# View(penguin_data)
+
+# 查看数据列名
+colnames(penguin_data)
+
+# 提取某列的数据，如提取 Site 这列的数据
+print("打印 Site 的数据：")
+penguin_data$Site
+```
+
+## 提取某 Site 的 Stree 列的数据
+
+```{r}
+# 使用 base::grepl 匹配字符串的某部分
+site <- base::grepl("Tsinghua", (penguin_data$Site))
+# 使用 base::startsWith 匹配字符串开头
+stree_cols <- base::startsWith(c(colnames(penguin_data)), 'stress')
+# 提取满足条件的 site 的 stree 数据
+# 如提取所有 Tsinghua 的 stree 数据
+stree_data <- penguin_data[site, stree_cols]
+```
