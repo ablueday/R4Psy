@@ -1,6 +1,10 @@
 ---
 title: "R Notebook for online course of Chuanpeng,Hu"
-output: html_notebook
+output:
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{ctex}
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
@@ -16,6 +20,20 @@ Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by press
 When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+# RStudio 配置
+
+```{r}
+# 安装包管理器 pacman
+if (!requireNamespace('pacman', quietly = TRUE)) {
+    install.packages('pacman')
+}
+# 安装 knitr，用于将 rmarkdown 转成 PDF、HTML、Word 等格式
+# pacman::p_load("rmarkdown")
+# pacman::p_load("knitr")
+# pacman::p_load("tinytex")
+# tinytex::install_tinytex()
+```
 
 # Chap-5
 
@@ -36,10 +54,6 @@ data
 
 ```{r}
 # 下载、导入所需的 R 包
-if (!requireNamespace('pacman', quietly = TRUE)) {
-    install.packages('pacman')
-}
-
 pacman::p_load(bruceR, tidyverse, here)
 ```
 
@@ -86,16 +100,216 @@ colnames(penguin_data)
 # 提取某列的数据，如提取 Site 这列的数据
 print("打印 Site 的数据：")
 penguin_data$Site
+
+
 ```
 
 ## 提取某 Site 的 Stree 列的数据
 
 ```{r}
-# 使用 base::grepl 匹配字符串的某部分
-site <- base::grepl("Tsinghua", (penguin_data$Site))
-# 使用 base::startsWith 匹配字符串开头
-stree_cols <- base::startsWith(c(colnames(penguin_data)), 'stress')
-# 提取满足条件的 site 的 stree 数据
 # 如提取所有 Tsinghua 的 stree 数据
-stree_data <- penguin_data[site, stree_cols]
+
+# 使用 base::grepl 匹配字符串的某部分，返回逻辑值，如匹配 “Tsinghua”
+site_thu <- base::grepl("Tsinghua", (penguin_data$Site))
+# 使用 base::startsWith 匹配字符串开头，返回逻辑值
+stress_cols <- base::startsWith(c(colnames(penguin_data)), 'stress')
+# 提取满足条件的 site 的 stree 数据
+
+stress_data_thu <- penguin_data[site_thu, stress_cols]
+```
+
+## 计算每个被试 stree 的总分，放在新列 stress_sum
+
+（一行对应一个被试的数据）
+
+```{r}
+stress_data_thu$stress_sum <- rowSums(stress_data_thu[,])
+```
+
+## 计算所有被试的 stress 总分均值和标准差
+
+```{r}
+# 均值
+mean(stress_data_thu$stress_sum, na.rm = TRUE)
+# 标准差
+sd(stress_data_thu$stress_sum, na.rm = TRUE)
+```
+
+## 数据类型判断与转换
+
+```{r}
+# 查看数据类型
+typeof(penguin_data$Site)
+# 或
+class(penguin_data$Site)
+
+#tip
+# 当矩阵里边同时用数字和字符时，这个矩阵的数字会被认为字符
+
+
+```
+
+> 数据类型判断：is 族函数
+
+```{r}
+
+# 是否为整数型
+is.numeric(3.4)
+
+is.numeric("3")
+
+is.numeric(NA)
+# [1] FALSE
+
+# 是否为字符型
+is.character(3.4)
+
+is.character("fe")
+
+# 是否为复数型
+is.complex(1+2i)
+
+# 是否为null
+is.null(NULL)
+# [1] TRUE
+
+is.null("NULL")
+# [1] FALSE
+
+is.null("")
+# [1] FALSE
+
+#is.null()
+# Error in is.null() : 0 arguments passed to 'is.null' which requires 1
+
+is.na(NA)
+```
+
+> 数据类型转换：as 族函数
+
+```{r}
+# 转换成数值
+as.numeric(c("1","2","3"))
+
+as.numeric(c("1", "2", "a"))
+# Warning: NAs introduced by coercion
+# [1]  1  2 NA
+
+as.numeric(c(T, F))
+
+as.numeric(c("T", "F"))
+
+as.numeric(c(TRUE, FALSE))
+```
+
+> 转化成因子（factor） R 中用因子代表数据中分类变量：如性别、省份、职业
+
+```{r}
+
+class(penguin_data$sex)
+# [1] "integer"
+
+# 查看变量中有哪些值
+unique(penguin_data$sex)
+# [1]  2  1 NA  3
+
+# 将性别转换成因子
+sex1 <- factor(penguin_data$sex, levels = c(1,2), labels = c("male", "female"), exclude = NA)
+unique(sex1)
+# [1] female male   <NA>  
+# Levels: male female
+```
+
+## 函数
+
+```{r}
+# 查看函数功能：？函数名称
+# ?factor
+
+# ?bruceR::import
+
+# 函数调用，建议加上 R包的名称
+# bruceR::import()
+
+```
+
+# C6
+
+## 操作数据示例
+
+- Ijzerman et al（2018） 的问卷数据
+- 研究问题：社交复杂度（CSI）等变量是否能预测核心体温（CBT）
+- 数据分析思路：
+  1.  得到各个变量的“干净”数据；
+  2.  对干净的数据进行统计分析；
+
+### 研究核心变量
+
+- CBT：核心体温，测量两次，变量为 Temperature_t1，Temperature_t2
+- CSI：为 socialdiversity
+- Site：数据源站点
+- DEQ：距赤道的距离
+- romantic：是否处于恋爱关系，1=yes，2=no
+- ALEX （Toronto Alexithymia Scale, TAS-20）：术情障碍量表(5点量表，变量为ALEX1\~ALEX16，第4、12、14、16题为反向计分)
+
+### 分析思路
+
+以如下示例：获得感兴趣变量的数据（体温、术情障碍量表得分），并按照Site查看被试的平均体温。
+
+1.  导入数据
+2.  对相关变量进行预处理（检查数据类型，处理缺失值、反向计分等）
+3.  计算所需的变量
+4.  分组求统计量
+
+计算术情障碍量表得分
+
+1.  选择 ALEX1～ALEX16（可选）
+
+```{r}
+
+# 读取数据
+# penguin_data <- bruceR::import(here::here('slides', 'data', 'penguin', 'penguin_rawdata.csv'), encoding = 'Latin-1')
+
+# 读取 ALEX 数据
+alex_cols <- base::startsWith(c(colnames(penguin_data)), 'ALEX')
+alex_data <- penguin_data[,alex_cols]
+
+```
+
+2.  以部分条件进行反向计分 \> 第4、12、14、16题为反向计分 \> 反向计分：1 -\> 5, 2 -\> 4, 3 -\> 3, 4 -\> 2, 5 -\> 1
+
+(基于 base 包的做法，代码量大，不简洁)
+
+```{r}
+# 直接对 penguin_data 进行操作
+alex_ana_data <- penguin_data
+alex_ana_data$ALEX4_new <- 6 - penguin_data$ALEX4
+alex_ana_data$ALEX12_new <- 6 - penguin_data$ALEX12
+alex_ana_data$ALEX14_new <- 6 - penguin_data$ALEX14
+alex_ana_data$ALEX16_new <- 6 - penguin_data$ALEX16
+
+```
+
+3.  对反向计分后的条目进行求和
+
+```{r}
+alex_ana_data$ALEX <- rowSums(alex_ana_data[, c("ALEX1", "ALEX2", "ALEX3", "ALEX4_new",
+                                            "ALEX5", "ALEX6","ALEX7", "ALEX8", 
+                                            "ALEX9", "ALEX10", "ALEX11", "ALEX12_new",
+                                            "ALEX13", "ALEX14_new","ALEX15","ALEX16_new")])
+```
+
+#### 基于tydyverse
+
+练习：
+
+```{r}
+# 创建一个测试数据框，表头为 grammer, score, popularity
+data <- data.frame(
+    "grammer" = c("R", "SPSS", "Python", "R", NA, "Matlab", "Python", "R"),
+    "score" = c(4, 3, 5, 7, 1, 3, 4, 6),
+    "popularity" = c(1,2,NA,4,5,6,3,8)
+)
+# 选择前两列数据，并筛选 grammer 为 R的行
+select_data1 <- data %>% dplyr::select(grammer, score) %>% dplyr::filter(grammer == "R")
 ```
